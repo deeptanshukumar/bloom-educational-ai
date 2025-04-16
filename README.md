@@ -2,4 +2,4 @@
 Groq-powered educational tutor and productivity AI.
 
 
-Members: Deeptanshu,harsh,piyush,adyanth
+Members: Deeptanshu Kumar, Harsh Pandya, Piyush Shiv, Adyanth Mallur
