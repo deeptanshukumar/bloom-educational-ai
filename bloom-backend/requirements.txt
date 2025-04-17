@@ -1,4 +1,9 @@
+flask-cors 
 Flask
-requests
-python-dotenv
+groq
 Pillow
+flask-limiter
+Flask-SQLAlchemy
+desktop-use
+
+#pip install -r requirements.txt
