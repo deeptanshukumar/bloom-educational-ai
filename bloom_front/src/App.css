@@ -1,3 +1,4 @@
+/* app.css */
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
@@ -15,14 +16,17 @@ body {
   background-color: #ffffff;
 }
 
-/* Sidebar styles */
+/* === Sidebar styles === */
 .sidebar {
   width: 260px;
-  background-color: #f8fafc;
+  background-color: #e0f7fa;
   padding: 24px;
   display: flex;
   flex-direction: column;
-  height: 100%;
+}
+
+.sidebar-middle {
+  /* Styles for the middle section if needed */
 }
 
 .add-button {
@@ -36,6 +40,7 @@ body {
   justify-content: center;
   border: none;
   cursor: pointer;
+  font-size: 14px;
 }
 
 .add-button:hover {
@@ -46,46 +51,52 @@ body {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background-color: #e2e8f0;
+  background-color: #cad5e1;
 }
 
-/* Main content styles */
+/* === Main content styles === */
 .main-content {
   flex: 1;
   padding: 32px;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
 }
 
 .content-wrapper {
   max-width: 768px;
   margin: 0 auto;
   width: 100%;
-  padding-top: 64px;
+  margin-top: 64px;
 }
 
 .main-heading {
-  font-size: 32px;
-  font-weight: bold;
+  font-size: 28px;
+  font-weight: 600;
   text-align: center;
-  margin-bottom: 48px;
+  margin-bottom: 40px;
+  color: #1e293b;
 }
 
+/* === Search Bar === */
 .search-container {
   border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  border-radius: 24px;
   display: flex;
   align-items: center;
   margin-bottom: 32px;
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  overflow: hidden;
 }
 
 .avatar-container {
-  padding: 12px;
+  padding: 8px 4px 8px 12px;
 }
 
 .avatar-circle {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background-color: #f1f5f9;
   display: flex;
@@ -94,57 +105,108 @@ body {
 }
 
 .avatar-icon {
-  color: #1e293b;
+  color: #475569;
+  width: 18px;
+  height: 18px;
 }
 
 .search-input {
   flex: 1;
-  padding: 16px 8px;
+  padding: 14px 8px;
   border: none;
   outline: none;
   font-size: 16px;
+  background-color: transparent;
 }
 
 .search-button {
-  background-color: #3b82f6;
+  background-color: #00bcd4;
   color: white;
-  padding: 16px;
+  padding: 14px 16px;
   border: none;
-  border-top-right-radius: 12px;
-  border-bottom-right-radius: 12px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  margin-left: 0px;
 }
 
 .search-button:hover {
-  background-color: #2563eb;
+  background-color: #0097a7;
 }
 
-.options-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+.mic-button {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-left: 1px solid #dbeafe;
 }
 
+.search-action-button {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-top-right-radius: 24px;
+  border-bottom-right-radius: 24px;
+   border-left: 1px solid #dbeafe;
+}
+
+/* === Option Button (Screen Share) === */
 .option-button {
   text-align: center;
-  padding: 24px 16px;
+  padding: 20px 16px;
   border-radius: 12px;
   border: 1px solid #e5e7eb;
-  background-color: transparent;
+  background-color: #f8fafc;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+  margin-top: 16px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
 .option-button:hover {
-  background-color: #f8fafc;
+  background-color: #f1f5f9;
+   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
 }
 
 .option-title {
   font-weight: 600;
   margin-bottom: 4px;
+  color: #1e293b;
 }
 
 .option-subtitle {
   font-size: 14px;
   color: #64748b;
+}
+
+/* === Upload File Button === */
+.upload-button {
+  background-color: #4caf50; /* Green color for upload */
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.2s;
+}
+
+.upload-button:hover {
+  background-color: #45a049; /* Darker green on hover */
+}
+
+/* Styles for screen reader only elements */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
