@@ -1,0 +1,209 @@
+/* app.css */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+  Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+  sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f5f5f5;
+}
+
+.app {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  background-color: #ffffff;
+}
+
+/* === Sidebar styles === */
+.sidebar {
+  width: 260px;
+  background-color: #e0f7fa;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+
+.add-button {
+  background-color: #f1f5f9;
+  color: #334155;
+  width: 100%;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.add-button:hover {
+  background-color: #e2e8f0;
+}
+
+.account-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #cad5e1;
+}
+
+/* === Main content styles === */
+.main-content {
+  flex: 1;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.content-wrapper {
+  max-width: 768px;
+  margin: 0 auto;
+  width: 100%;
+  margin-top: 64px;
+}
+
+.main-heading {
+  font-size: 28px;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 40px;
+  color: #1e293b;
+}
+
+/* === Search Bar === */
+.search-container {
+  border: 1px solid #e5e7eb;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  margin-bottom: 32px;
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.avatar-container {
+  padding: 8px 4px 8px 12px;
+}
+
+.avatar-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-icon {
+  color: #475569;
+  width: 18px;
+  height: 18px;
+}
+
+.search-input {
+  flex: 1;
+  padding: 14px 8px;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  background-color: transparent;
+}
+
+.search-button {
+  background-color: #00bcd4;
+  color: white;
+  padding: 14px 16px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  margin-left: 0px;
+}
+
+.search-button:hover {
+  background-color: #0097a7;
+}
+
+.mic-button {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-left: 1px solid #dbeafe;
+}
+
+.search-action-button {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-top-right-radius: 24px;
+  border-bottom-right-radius: 24px;
+   border-left: 1px solid #dbeafe;
+}
+
+/* === Option Button (Screen Share) === */
+.option-button {
+  text-align: center;
+  padding: 20px 16px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background-color: #f8fafc;
+  cursor: pointer;
+  transition: background-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+  margin-top: 16px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.option-button:hover {
+  background-color: #f1f5f9;
+   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.option-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: #1e293b;
+}
+
+.option-subtitle {
+  font-size: 14px;
+  color: #64748b;
+}
+
+/* === Upload File Button === */
+.upload-button {
+  background-color: #4caf50; /* Green color for upload */
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.2s;
+}
+
+.upload-button:hover {
+  background-color: #45a049; /* Darker green on hover */
+}
+
+/* Styles for screen reader only elements */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
