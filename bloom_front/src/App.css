@@ -25,9 +25,6 @@ body {
   flex-direction: column;
 }
 
-.sidebar-middle {
-  /* Styles for the middle section if needed */
-}
 
 .add-button {
   background-color: #f1f5f9;
