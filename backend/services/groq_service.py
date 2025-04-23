@@ -1,8 +1,8 @@
 import os
-import requests
 import json
-from typing import Dict, Any, Optional
+import requests
 from dotenv import load_dotenv
+from typing import Dict, Any
 
 # Load environment variables from .env file
 load_dotenv()
@@ -11,21 +11,25 @@ class GroqService:
     # Model categories and their corresponding models
     MODELS = {
         'REASONING': {
+            'llama-3.3-70b-versatile': 'Llama 3.3 70B Versatile',
             'qwen-qwq': 'Qwen QwQ',
             'deepseek-r1-distill-qwen': 'DeepSeek R1 Distill Qwen',
             'deepseek-r1-distill-llama': 'DeepSeek R1 Distill Llama'
         },
         'TEXT_TO_TEXT': {
+            'llama-3.3-70b-versatile': 'Llama 3.3 70B Versatile',
             'llama-4': 'Llama 4',
             'llama-3': ['3.3', '3.2', '3.1', '3.0'],
             'qwen-2.5': 'Qwen 2.5',
             'gemma-2': 'Gemma 2'
         },
         'VISION': {
+            'llama-3.3-70b-versatile': 'Llama 3.3 70B Versatile',
             'llama-4': 'Llama 4',
             'llama-3.2': 'Llama 3.2'
         },
         'MULTILINGUAL': {
+            'llama-3.3-70b-versatile': 'Llama 3.3 70B Versatile',
             'llama-4': 'Llama 4',
             'llama-3': ['3.3', '3.2', '3.1', '3.0'],
             'mistral-saba': 'Mistral Saba',
@@ -41,11 +45,13 @@ class GroqService:
             'whisper-distil': 'Whisper Distil'
         },
         'FUNCTION_CALLING': {
+            'llama-3.3-70b-versatile': 'Llama 3.3 70B Versatile',
             'llama-4': 'Llama 4',
             'llama-3.3-70b': 'Llama 3.3 70B',
             'qwen-qwq': 'Qwen QwQ'
         },
         'CODING': {
+            'llama-3.3-70b-versatile': 'Llama 3.3 70B Versatile',
             'qwen-2.5-coder': 'Qwen 2.5 Coder'
         },
         'SAFETY': {
@@ -68,11 +74,11 @@ class GroqService:
         """
         Get the most appropriate model for a given task type
         """
-        if task_type in self.MODELS:
+        if (task_type in self.MODELS):
             # Default to the first model in each category
             models = self.MODELS[task_type]
             return next(iter(models.keys()))
-        return 'llama-4'  # Default to Llama 4 if task type not specified
+        return 'llama-3.3-70b-versatile'  # Default to Llama 3.3 70B Versatile if task type not specified
 
     def complete_prompt(self, prompt: str, task_type: str = None, specific_model: str = None, max_tokens: int = 1000) -> Dict[str, Any]:
         """
@@ -85,15 +91,34 @@ class GroqService:
             payload = {
                 "model": model,
                 "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": max_tokens
+                "max_tokens": max_tokens,
+                "temperature": 0.7
             }
             
-            response = requests.post(endpoint, headers=self.headers, json=payload)
-            response.raise_for_status()
-            return response.json()
+            print(f"Calling Groq API with model: {model}")
+            response = requests.post(endpoint, headers=self.headers, json=payload, timeout=30)
+            
+            if response.status_code != 200:
+                error_msg = f"Groq API Error: {response.status_code} - {response.text}"
+                print(error_msg)
+                return {"error": error_msg}
+                
+            response_data = response.json()
+            print(f"Groq API Response: {response_data}")
+            return response_data
+            
         except requests.exceptions.RequestException as e:
-            print(f"Error calling Groq API: {e}")
-            return {"error": str(e)}
+            error_msg = f"Error calling Groq API: {str(e)}"
+            print(error_msg)
+            return {"error": error_msg}
+        except json.JSONDecodeError as e:
+            error_msg = f"JSON decoding error: {str(e)}"
+            print(error_msg)
+            return {"error": error_msg}
+        except ValueError as e:
+            error_msg = f"Value error: {str(e)}"
+            print(error_msg)
+            return {"error": error_msg}
     
     def process_math_problem(self, problem_text: str, subject: str = "mathematics") -> Dict[str, Any]:
         """

@@ -6,7 +6,8 @@ class GroqService {
             baseURL: 'http://localhost:5000/api',
             headers: {
                 'Content-Type': 'application/json'
-            }
+            },
+            timeout: 30000 // 30 second timeout
         });
 
         // Add request interceptor to include auth token
@@ -27,7 +28,12 @@ class GroqService {
                     localStorage.removeItem('bloom_token');
                     window.location.href = '/login';
                 }
-                throw error;
+                // Extract the most meaningful error message
+                const errorMessage = error.response?.data?.error ||
+                    error.response?.data?.message ||
+                    error.message ||
+                    'An unexpected error occurred';
+                throw new Error(errorMessage);
             }
         );
 
@@ -36,8 +42,12 @@ class GroqService {
 
     async generateResponse(prompt, options = {}) {
         try {
+            if (!prompt?.trim()) {
+                throw new Error('Please enter a message to send.');
+            }
+
             const response = await this.client.post('/ai/analyze', {
-                prompt,
+                prompt: prompt.trim(),
                 language: options.language || 'English'
             });
 
@@ -51,7 +61,8 @@ class GroqService {
             if (!navigator.onLine) {
                 throw new Error('No internet connection. Please check your network and try again.');
             }
-            throw error;
+            // Re-throw the error with a user-friendly message
+            throw new Error(error.message || 'An error occurred while processing your request. Please try again.');
         }
     }
 
