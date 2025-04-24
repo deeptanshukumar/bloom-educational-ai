@@ -38,11 +38,12 @@ export function AuthProvider({ children }) {
 
     const login = async (email, password) => {
         try {
-            const response = await axios.post('http://localhost:5000/api/auth/login',
+            const response = await axios.post(
+                `${process.env.REACT_APP_API_URL}/api/auth/login`,
                 { email, password },
                 {
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
                     },
                     withCredentials: true
                 }
@@ -61,11 +62,8 @@ export function AuthProvider({ children }) {
             }
             throw new Error('No access token received');
         } catch (error) {
-            console.error('Login error:', error);
-            if (error.response) {
-                throw new Error(error.response.data.error || 'Login failed');
-            }
-            throw new Error('Network error. Please check your connection.');
+            console.error('Login error details:', error.response?.data);
+            throw new Error(error.response?.data?.message || 'Invalid credentials');
         }
     };
 

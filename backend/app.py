@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from models import db
@@ -6,6 +6,7 @@ import os
 from models.blacklist import blacklist
 from dotenv import load_dotenv
 from config import DevelopmentConfig, ProductionConfig
+import logging
 
 load_dotenv()
 
@@ -23,6 +24,7 @@ def create_app(config_class=DevelopmentConfig):
             "origins": ["http://localhost:3000"],
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"],
+            "expose_headers": ["Authorization"],
             "max_age": 3600,
             "supports_credentials": True
         }
@@ -50,6 +52,20 @@ def create_app(config_class=DevelopmentConfig):
 
 # Create the application instance
 app = create_app(DevelopmentConfig if os.environ.get('FLASK_ENV') == 'development' else ProductionConfig)
+
+# Add after app creation
+app.logger.setLevel(logging.DEBUG)
+
+@app.before_request
+def log_request_info():
+    app.logger.debug('Headers: %s', request.headers)
+    try:
+        body = request.get_json()
+        app.logger.debug('Body: %s', body)
+    except Exception:
+        app.logger.debug('Body: %s', request.get_data())
+    app.logger.debug('URL: %s', request.url)
+    app.logger.debug('Method: %s', request.method)
 
 if __name__ == '__main__':
     with app.app_context():
