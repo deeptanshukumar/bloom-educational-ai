@@ -3,14 +3,19 @@ import axios from 'axios';
 class GroqService {
     constructor() {
         this.client = axios.create({
-            baseURL: 'http://localhost:5000/api',
+            baseURL: 'http://localhost:5000/api',  // Restore original URL
             headers: {
                 'Content-Type': 'application/json'
             },
-            timeout: 30000 // 30 second timeout
+            timeout: 120000, // Increase timeout to 120 seconds for large files
+            // Enhanced retry logic
+            retry: 3,
+            retryDelay: (retryCount) => {
+                return Math.min(1000 * Math.pow(2, retryCount), 10000); // Exponential backoff with max 10s
+            }
         });
 
-        // Add request interceptor to include auth token
+        // Add request interceptor for auth
         this.client.interceptors.request.use((config) => {
             const token = localStorage.getItem('bloom_token');
             if (token) {
@@ -19,25 +24,53 @@ class GroqService {
             return config;
         });
 
-        // Add response interceptor for error handling
+        // Enhanced response interceptor
         this.client.interceptors.response.use(
             response => response,
-            error => {
-                console.error('AI Service Error:', error.response?.data || error.message);
-                if (error.response?.status === 401) {
+            async error => {
+                const { config, response } = error;
+
+                // Don't retry on specific error codes
+                const skipRetry = response?.status === 401 ||
+                    response?.status === 403 ||
+                    response?.status === 422;
+
+                // If network error or 5xx and retries left, retry the request
+                if (!skipRetry && (!response || response.status >= 500) && config.retry > 0) {
+                    config.retry -= 1;
+                    const retryCount = 3 - config.retry;
+                    const delayMs = config.retryDelay(retryCount);
+                    await new Promise(resolve => setTimeout(resolve, delayMs));
+                    return this.client(config);
+                }
+
+                if (response?.status === 401) {
                     localStorage.removeItem('bloom_token');
                     window.location.href = '/login';
+                    throw new Error('Session expired. Please log in again.');
                 }
+
                 // Extract the most meaningful error message
-                const errorMessage = error.response?.data?.error ||
-                    error.response?.data?.message ||
-                    error.message ||
-                    'An unexpected error occurred';
+                let errorMessage;
+                if (!navigator.onLine) {
+                    errorMessage = 'No internet connection. Please check your network and try again.';
+                } else if (error.code === 'ECONNABORTED') {
+                    errorMessage = 'Request timed out. Please try again.';
+                } else if (!response) {
+                    errorMessage = 'Network error. Please check your connection and try again.';
+                } else {
+                    errorMessage = response.data?.error ||
+                        response.data?.message ||
+                        error.message ||
+                        'An unexpected error occurred';
+                }
+
                 throw new Error(errorMessage);
             }
         );
 
         this.currentSessionId = null;
+        this.pendingUploads = new Set();
     }
 
     async generateResponse(prompt, options = {}) {
@@ -51,18 +84,19 @@ class GroqService {
                 language: options.language || 'English'
             });
 
-            if (!response.data || !response.data.response) {
+            if (!response.data) {
                 throw new Error('Invalid response from AI service');
             }
 
+            if (response.data.error) {
+                throw new Error(response.data.error);
+            }
+
             return response.data.response;
+
         } catch (error) {
             console.error('AI Service Error:', error);
-            if (!navigator.onLine) {
-                throw new Error('No internet connection. Please check your network and try again.');
-            }
-            // Re-throw the error with a user-friendly message
-            throw new Error(error.message || 'An error occurred while processing your request. Please try again.');
+            throw error;
         }
     }
 
@@ -123,7 +157,7 @@ class GroqService {
 
     async initFileSession() {
         try {
-            const response = await this.client.post('/api/file/session/create');
+            const response = await this.client.post('file/session/create');  // Removed leading slash
             this.currentSessionId = response.data.session_id;
             return this.currentSessionId;
         } catch (error) {
@@ -139,42 +173,59 @@ class GroqService {
             }
 
             const uploadPromises = files.map(async (file) => {
-                // Validate file size
-                const maxSize = 16 * 1024 * 1024; // 16MB
-                if (file.size > maxSize) {
-                    throw new Error(`File ${file.name} exceeds maximum size of 16MB`);
-                }
-
-                // Validate file type
-                const allowedTypes = [
-                    'text/plain',
-                    'application/pdf',
-                    'application/msword',
-                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                    'image/jpeg',
-                    'image/png',
-                    'image/gif',
-                    'audio/mpeg',
-                    'audio/wav'
-                ];
-                if (!allowedTypes.includes(file.type)) {
-                    throw new Error(`File type ${file.type} not supported for ${file.name}`);
-                }
-
-                const formData = new FormData();
-                formData.append('file', file);
-
-                if (additionalContext.trim()) {
-                    formData.append('context', additionalContext.trim());
+                // Skip if already uploading
+                if (this.pendingUploads.has(file.name)) {
+                    throw new Error(`File ${file.name} is already being uploaded`);
                 }
 
                 try {
+                    this.pendingUploads.add(file.name);
+
+                    // Validate file
+                    if (!file) {
+                        throw new Error('Invalid file object');
+                    }
+
+                    // Validate file size
+                    const maxSize = 16 * 1024 * 1024; // 16MB
+                    if (file.size > maxSize) {
+                        throw new Error(`File ${file.name} exceeds maximum size of 16MB`);
+                    }
+
+                    // Validate file type
+                    const allowedTypes = [
+                        'text/plain',
+                        'application/pdf',
+                        'application/msword',
+                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                        'image/jpeg',
+                        'image/png',
+                        'image/gif',
+                        'audio/mpeg',
+                        'audio/wav'
+                    ];
+                    if (!allowedTypes.includes(file.type)) {
+                        throw new Error(`File type ${file.type} not supported for ${file.name}`);
+                    }
+
+                    const formData = new FormData();
+                    formData.append('file', file);
+
+                    if (additionalContext?.trim()) {
+                        formData.append('context', additionalContext.trim());
+                    }
+
                     const response = await this.client.post(
-                        `/file/upload/${this.currentSessionId}`,
+                        `file/upload/${this.currentSessionId}`,  // Removed leading slash
                         formData,
                         {
                             headers: {
                                 'Content-Type': 'multipart/form-data'
+                            },
+                            // Progress tracking
+                            onUploadProgress: (progressEvent) => {
+                                const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                                console.log(`Upload progress for ${file.name}: ${percentCompleted}%`);
                             }
                         }
                     );
@@ -185,13 +236,10 @@ class GroqService {
 
                     return {
                         ...response.data,
-                        context: additionalContext.trim() || null
+                        context: additionalContext?.trim() || null
                     };
-                } catch (error) {
-                    return {
-                        error: `Failed to upload ${file.name}: ${error.response?.data?.error || error.message}`,
-                        file: file.name
-                    };
+                } finally {
+                    this.pendingUploads.delete(file.name);
                 }
             });
 
@@ -209,7 +257,17 @@ class GroqService {
             return successful;
         } catch (error) {
             console.error('Error uploading files:', error);
-            throw new Error(error.response?.data?.error || error.message || 'Error uploading files');
+
+            // Enhance error message for network issues
+            if (!navigator.onLine) {
+                throw new Error('No internet connection. Please check your network and try again.');
+            } else if (error.code === 'ECONNABORTED') {
+                throw new Error('Upload timed out. Please try with a smaller file or check your connection.');
+            } else if (!error.response) {
+                throw new Error('Network error occurred. Please try again.');
+            }
+
+            throw error;
         }
     }
 
@@ -241,7 +299,7 @@ class GroqService {
     async endFileSession() {
         if (this.currentSessionId) {
             try {
-                await this.client.delete(`/api/file/session/${this.currentSessionId}`);
+                await this.client.delete(`file/session/${this.currentSessionId}`);  // Removed leading slash
                 this.currentSessionId = null;
             } catch (error) {
                 console.error('Error ending file session:', error);

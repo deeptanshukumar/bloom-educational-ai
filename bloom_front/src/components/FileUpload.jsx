@@ -51,14 +51,22 @@ export default function FileUpload({ onFileSelect, onCancel }) {
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [additionalText, setAdditionalText] = useState('');
     const [errors, setErrors] = useState([]);
+    const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef(null);
 
     const validateFile = (file) => {
+        if (!file) {
+            return 'Invalid file object';
+        }
         if (!ALLOWED_TYPES.includes(file.type)) {
             return `File type ${file.type} not supported for ${file.name}`;
         }
         if (file.size > MAX_FILE_SIZE) {
             return `File ${file.name} exceeds maximum size of 16MB`;
+        }
+        // Check for duplicates
+        if (selectedFiles.some(existingFile => existingFile.name === file.name)) {
+            return `File ${file.name} has already been selected`;
         }
         return null;
     };
@@ -99,17 +107,26 @@ export default function FileUpload({ onFileSelect, onCancel }) {
         });
 
         setErrors(newErrors);
-        setSelectedFiles(prevFiles => [...prevFiles, ...validFiles]);
+        if (validFiles.length > 0) {
+            setSelectedFiles(prevFiles => [...prevFiles, ...validFiles]);
+        }
     };
 
     const removeFile = (index) => {
         setSelectedFiles(files => files.filter((_, i) => i !== index));
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (selectedFiles.length > 0) {
             setErrors([]);
-            onFileSelect(selectedFiles, additionalText);
+            setIsUploading(true);
+            try {
+                await onFileSelect(selectedFiles, additionalText);
+            } catch (error) {
+                setErrors([error.message || 'An error occurred while processing the files']);
+            } finally {
+                setIsUploading(false);
+            }
         }
     };
 
@@ -125,6 +142,7 @@ export default function FileUpload({ onFileSelect, onCancel }) {
                     <button
                         onClick={onCancel}
                         className="text-gray-400 hover:text-gray-500"
+                        disabled={isUploading}
                     >
                         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -166,8 +184,8 @@ export default function FileUpload({ onFileSelect, onCancel }) {
                 )}
 
                 <div
-                    className={`border-2 border-dashed rounded-lg p-6 mb-4 text-center
-                        ${dragActive ? 'border-purple-500 bg-purple-50' : 'border-gray-300'}
+                    className={`border-2 rounded-lg p-6 mb-4 text-center transition-all duration-200
+                        ${dragActive ? 'border-purple-500 bg-purple-50 border-dashed' : 'border-gray-300'}
                         ${selectedFiles.length > 0 ? 'border-solid' : 'border-dashed'}`}
                     onDragEnter={handleDrag}
                     onDragLeave={handleDrag}
@@ -181,6 +199,7 @@ export default function FileUpload({ onFileSelect, onCancel }) {
                         className="hidden"
                         accept={ALLOWED_TYPES.join(',')}
                         onChange={handleFileInput}
+                        disabled={isUploading}
                     />
 
                     {selectedFiles.length === 0 ? (
@@ -193,6 +212,7 @@ export default function FileUpload({ onFileSelect, onCancel }) {
                                     type="button"
                                     onClick={() => fileInputRef.current?.click()}
                                     className="text-purple-600 hover:text-purple-500 font-medium"
+                                    disabled={isUploading}
                                 >
                                     Click to upload
                                 </button>
@@ -217,6 +237,7 @@ export default function FileUpload({ onFileSelect, onCancel }) {
                                     <button
                                         onClick={() => removeFile(index)}
                                         className="text-gray-400 hover:text-gray-500"
+                                        disabled={isUploading}
                                     >
                                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -228,6 +249,7 @@ export default function FileUpload({ onFileSelect, onCancel }) {
                                 type="button"
                                 onClick={() => fileInputRef.current?.click()}
                                 className="text-sm text-purple-600 hover:text-purple-500"
+                                disabled={isUploading}
                             >
                                 Add more files
                             </button>
@@ -246,6 +268,7 @@ export default function FileUpload({ onFileSelect, onCancel }) {
                         placeholder="Add any additional context or notes about the files..."
                         value={additionalText}
                         onChange={(e) => setAdditionalText(e.target.value)}
+                        disabled={isUploading}
                     />
                 </div>
 
@@ -253,18 +276,29 @@ export default function FileUpload({ onFileSelect, onCancel }) {
                     <button
                         onClick={onCancel}
                         className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 border border-gray-300 rounded-md"
+                        disabled={isUploading}
                     >
                         Cancel
                     </button>
                     <button
                         onClick={handleSubmit}
-                        disabled={selectedFiles.length === 0}
-                        className={`px-4 py-2 text-sm font-medium text-white rounded-md
-                            ${selectedFiles.length > 0
+                        disabled={selectedFiles.length === 0 || isUploading}
+                        className={`px-4 py-2 text-sm font-medium text-white rounded-md flex items-center space-x-2
+                            ${selectedFiles.length > 0 && !isUploading
                                 ? 'bg-purple-600 hover:bg-purple-700'
                                 : 'bg-gray-300 cursor-not-allowed'}`}
                     >
-                        Upload
+                        {isUploading ? (
+                            <>
+                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span>Uploading...</span>
+                            </>
+                        ) : (
+                            <span>Upload</span>
+                        )}
                     </button>
                 </div>
             </div>

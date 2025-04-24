@@ -88,10 +88,10 @@ export default function AIChatInterface() {
             setIsProcessing(true);
             setShowFileUpload(false);
 
-            // Create file preview message
+            // Create file preview message with a loading indicator
             const filePreviewMessage = {
                 role: 'user',
-                content: 'Uploaded files:\n' + files.map(f => `- ${f.name}`).join('\n'),
+                content: `📄 Analyzing files:\n${files.map(f => `- ${f.name}`).join('\n')}`,
                 files: files.map(f => ({
                     name: f.name,
                     type: f.type,
@@ -107,32 +107,45 @@ export default function AIChatInterface() {
 
                 // Add AI response for each file
                 for (const result of results) {
-                    if (result.analysis) {
-                        const aiMessage = {
-                            role: 'assistant',
-                            content: result.analysis,
-                            fileId: result.file_id
-                        };
-                        setMessages(prev => [...prev, aiMessage]);
+                    let content;
+                    if (result.error) {
+                        content = `⚠️ Error processing ${result.original_name}: ${result.error}`;
+                        if (result.error_details) {
+                            content += `\n\nDetails: ${result.error_details}`;
+                        }
+                    } else {
+                        content = result.analysis || `File ${result.original_name} was uploaded successfully.`;
                     }
+
+                    const aiMessage = {
+                        role: 'assistant',
+                        content: content,
+                        fileId: result.file_id
+                    };
+                    setMessages(prev => [...prev, aiMessage]);
                 }
 
                 setUploadedFiles(prev => [...prev, ...files]);
             } catch (error) {
-                let errorMessage = 'Sorry, I encountered an error processing your files.';
+                console.error('File processing error:', error);
+                let errorMessage;
 
-                // Extract specific error messages
-                if (error.message.includes('exceeds maximum size')) {
-                    errorMessage = 'One or more files exceed the maximum size limit of 16MB.';
+                if (!navigator.onLine) {
+                    errorMessage = '📶 No internet connection. Please check your network and try again.';
+                } else if (error.message.includes('exceeds maximum size')) {
+                    errorMessage = '📦 One or more files exceed the maximum size limit of 16MB.';
                 } else if (error.message.includes('not supported')) {
-                    errorMessage = 'One or more files have an unsupported file type. Supported types include text, PDF, Word documents, images, and audio files.';
+                    errorMessage = '❌ One or more files have an unsupported type. Supported types include text, PDF, Word documents, images, and audio files.';
+                } else if (error.message.includes('already exists')) {
+                    errorMessage = '🔄 One or more files with the same name already exist in this session.';
                 } else if (error.message.includes('Failed to upload')) {
-                    errorMessage = error.message; // Use the detailed error message from the service
-                } else if (!navigator.onLine) {
-                    errorMessage = 'No internet connection. Please check your network and try again.';
+                    errorMessage = `⚠️ ${error.message}`; // Use the detailed error message from the service
+                } else {
+                    errorMessage = `❌ ${error.message || 'An unexpected error occurred while processing your files.'}`;
                 }
 
-                setMessages(prev => [...prev, {
+                // Remove the loading message and add error message
+                setMessages(prev => [...prev.slice(0, -1), {
                     role: 'assistant',
                     content: errorMessage
                 }]);
@@ -141,7 +154,7 @@ export default function AIChatInterface() {
             console.error('Error handling files:', error);
             setMessages(prev => [...prev, {
                 role: 'assistant',
-                content: 'An unexpected error occurred. Please try again.'
+                content: '❌ An unexpected error occurred. Please try again.'
             }]);
         } finally {
             setIsProcessing(false);
@@ -191,18 +204,34 @@ export default function AIChatInterface() {
         try {
             setIsProcessing(true);
             setHasStartedChat(true);
+
+            // Add user message immediately
             const userMessage = { role: 'user', content: inputText };
             setMessages(prev => [...prev, userMessage]);
+
+            // Store and clear input text
+            const messageToSend = inputText.trim();
             setInputText('');
 
-            const response = await groqService.generateResponse(inputText);
-            const aiMessage = { role: 'assistant', content: response };
+            // Get AI response
+            const response = await groqService.generateResponse(messageToSend);
+
+            // Add AI response
+            const aiMessage = {
+                role: 'assistant',
+                content: response || 'I apologize, but I was unable to generate a response. Please try again.'
+            };
             setMessages(prev => [...prev, aiMessage]);
+
         } catch (error) {
             console.error('Error sending message:', error);
+            const errorMessage = error.message.includes('network') || error.message.includes('connection')
+                ? '📶 Network error occurred. Please check your internet connection and try again.'
+                : `❌ ${error.message || 'Sorry, I encountered an error processing your request. Please try again.'}`;
+
             setMessages(prev => [...prev, {
                 role: 'assistant',
-                content: 'Sorry, I encountered an error processing your request.'
+                content: errorMessage
             }]);
         } finally {
             setIsProcessing(false);
