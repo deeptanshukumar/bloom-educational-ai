@@ -1,0 +1,16 @@
+[build]
+  base = "/"
+  publish = "build"
+  command = "npm run build"
+
+[context.production.environment]
+  REACT_APP_API_URL = "https://your-backend-api.herokuapp.com"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[dev]
+  framework = "create-react-app"
+  targetPort = 3000
