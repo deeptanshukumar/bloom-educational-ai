@@ -5,4 +5,4 @@ nixPkgs = ["python311"]
 cmds = []
 
 [phases.start]
-cmds = ["cd backend && python3 -m gunicorn app:app"]
+cmds = ["cd backend && export PYTHONPATH=$(pwd) && python3 -m gunicorn app:app"]
