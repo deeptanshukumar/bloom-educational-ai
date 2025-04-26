@@ -1,4 +1,3 @@
-pip install -r backend/requirements.txt
 flask-cors 
 Flask
 groq
