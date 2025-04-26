@@ -10,8 +10,13 @@ load_dotenv()
 def init_database():
     app = Flask(__name__)
     
-    # Configure SQLite database
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///bloom_dev.db'
+    # Get database URL from environment
+    database_url = os.environ.get('DATABASE_URL')
+    if database_url and database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    
+    # Configure database
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
     # Initialize database
@@ -38,39 +43,43 @@ def init_database():
             # Commit roles first
             db.session.commit()
             
-            # Create test user if it doesn't exist
-            test_email = 'deeptanshu.kumar13@gmail.com'
-            test_user = User.query.filter_by(email=test_email).first()
+            # Create your user account
+            user_email = 'deeptanshu.kumar13@gmail.com'
+            admin_password = os.environ.get('ADMIN_PASSWORD')
+            if not admin_password:
+                print("Warning: ADMIN_PASSWORD not set in environment variables")
+                return
+                
+            user = User.query.filter_by(email=user_email).first()
             
-            if not test_user:
-                test_user = User(
+            if not user:
+                user = User(
                     username='deeptanshu',
-                    email=test_email,
-                    password_hash=generate_password_hash('password123', method='pbkdf2:sha256'),
-                    is_active=True  # Make sure user is active
+                    email=user_email,
+                    password_hash=generate_password_hash(admin_password, method='pbkdf2:sha256'),
+                    is_active=True
                 )
                 
-                # Add admin role to the test user
+                # Add admin role to the user
                 admin_role = Role.query.filter_by(name='admin').first()
                 if admin_role:
-                    test_user.roles.append(admin_role)
+                    user.roles.append(admin_role)
                 else:
                     print("Warning: Admin role not found!")
                 
-                db.session.add(test_user)
-                print(f"Created test user: {test_email}")
+                db.session.add(user)
+                print(f"Created user: {user_email}")
                 
                 db.session.commit()
                 print("Database initialized successfully")
-                
-                # Verify user was created
-                created_user = User.query.filter_by(email=test_email).first()
-                if created_user:
-                    print(f"Verified user exists with email: {created_user.email}")
-                    print(f"User roles: {[role.name for role in created_user.roles]}")
-                else:
-                    print("Warning: Failed to verify user creation!")
+            else:
+                # Update password for existing user
+                user.password_hash = generate_password_hash(admin_password, method='pbkdf2:sha256')
+                db.session.commit()
+                print(f"Updated password for user: {user_email}")
             
+            print("Database setup complete")
+                
         except Exception as e:
             print(f"Error initializing database: {str(e)}")
             db.session.rollback()
