@@ -5,4 +5,4 @@ nixPkgs = ["python311", "python311Packages.pip", "python311Packages.gunicorn", "
 cmds = []
 
 [phases.start]
-cmds = ["cd backend && gunicorn app:app"]
+cmds = ["source /etc/profile && cd backend && gunicorn app:app"]
