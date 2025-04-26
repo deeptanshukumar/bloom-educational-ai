@@ -7,6 +7,7 @@ from models.blacklist import blacklist
 from dotenv import load_dotenv
 from config import DevelopmentConfig, ProductionConfig
 import logging
+from backend.init_db import init_database  # Import init_database
 
 load_dotenv()
 
@@ -14,10 +15,10 @@ def create_app(config_class=DevelopmentConfig):
     # Ensure instance directory exists
     instance_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'instance')
     os.makedirs(instance_path, exist_ok=True)
-    
+
     flask_app = Flask(__name__, instance_path=instance_path)
     flask_app.config.from_object(config_class)
-    
+
     # Configure CORS with longer timeout
     CORS(flask_app, resources={
         r"/api/*": {
@@ -33,6 +34,11 @@ def create_app(config_class=DevelopmentConfig):
     # Initialize extensions
     db.init_app(flask_app)
     jwt = JWTManager(flask_app)
+
+    # Initialize database and create initial user
+    with flask_app.app_context():
+        db.create_all()
+        init_database()
 
     @jwt.token_in_blocklist_loader
     def check_if_token_revoked(_, jwt_payload):
@@ -68,9 +74,4 @@ def log_request_info():
     app.logger.debug('Method: %s', request.method)
 
 if __name__ == '__main__':
-    with app.app_context():
-        # Ensure the database directory exists
-        db_dir = os.path.dirname(app.config['SQLALCHEMY_DATABASE_URI'].replace('sqlite:///', ''))
-        os.makedirs(db_dir, exist_ok=True)
-        db.create_all()
     app.run(debug=True, host='0.0.0.0', port=5000)
