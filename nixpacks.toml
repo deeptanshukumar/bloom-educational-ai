@@ -1,8 +1,8 @@
 [phases.setup]
-nixPkgs = ["python311", "python311Packages.pip", "python311Packages.gunicorn", "python311Packages.flask"]
+nixPkgs = ["python311", "python311Packages.pip"]
 
 [phases.build]
-cmds = []
+cmds = ["cd backend && pip install -r requirements.txt"]
 
 [phases.start]
-cmds = ["source /etc/profile && cd backend && gunicorn app:app"]
+cmds = ["cd backend && gunicorn app:app"]
