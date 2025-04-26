@@ -1,8 +1,28 @@
 [phases.setup]
-nixPkgs = ["python311", "python311Packages.pip"]
+nixPkgs = [
+  "python311",
+  "python311Packages.pip",
+  "python311Packages.flask",
+  "python311Packages.flask-cors",
+  "python311Packages.flask-jwt-extended",
+  "python311Packages.sqlalchemy",
+  "python311Packages.psycopg2-binary", # Or your PostgreSQL driver
+  "python311Packages.python-dotenv",
+  "python311Packages.gunicorn",
+  "python311Packages.pillow",
+  "python311Packages.pymongo",
+  "python311Packages.bcrypt",
+  "python311Packages.py-pdf", # Assuming PyPDF2 is packaged as this
+  "python311Packages.python-magic",
+  "python311Packages.groq",
+  "python311Packages.google-cloud-speech",
+  "python311Packages.google-cloud-texttospeech",
+  "python311Packages.pytesseract",
+  "python311Packages.flask-limiter"
+]
 
 [phases.build]
-cmds = ["cd backend && pip install -r requirements.txt"]
+cmds = []
 
 [phases.start]
 cmds = ["cd backend && gunicorn app:app"]
