@@ -1,11 +1,5 @@
-[phases.setup]
-nixPkgs = ["python311", "python311Packages.pip"]
-
 [phases.build]
-cmds = [
-  "cd backend",
-  "nix-shell --packages python311 python311Packages.pip --command 'pip install -r requirements.txt'"
-]
+cmds = []
 
 [phases.start]
 cmds = ["cd backend && gunicorn app:app"]
