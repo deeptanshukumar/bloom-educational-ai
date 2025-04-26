@@ -1,5 +1,8 @@
+[phases.setup]
+nixPkgs = ["python311"]
+
 [phases.build]
 cmds = []
 
 [phases.start]
-cmds = ["cd backend && python -m gunicorn app:app"]
+cmds = ["cd backend && python3 -m gunicorn app:app"]
