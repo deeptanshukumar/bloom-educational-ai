@@ -5,4 +5,4 @@ nixPkgs = ["python311", "python311Packages.pip", "python311Packages.gunicorn", "
 cmds = [] 
 
 [phases.start]
-cmd = "gunicorn backend.app:app"
+cmd = "gunicorn backend/app:app"  
