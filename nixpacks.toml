@@ -2,7 +2,10 @@
 nixPkgs = ["python311"]
 
 [phases.build]
-cmds = []
+cmds = [
+  "cd backend",
+  "nix-shell --packages python311 --command 'export PYTHONPATH=$(pwd); python3 -m venv venv; source venv/bin/activate; pip install -r requirements.txt'"
+]
 
 [phases.start]
-cmds = ["cd backend && export PYTHONPATH=$(pwd):$(pwd)/*:$(pwd)/**/* && python3 -m gunicorn app:app"]
+cmds = ["cd backend && source venv/bin/activate && gunicorn app:app"]
