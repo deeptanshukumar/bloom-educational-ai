@@ -2,4 +2,4 @@
 cmds = []
 
 [phases.start]
-cmds = ["cd backend && gunicorn app:app"]
+cmds = ["cd backend && python -m gunicorn app:app"]
