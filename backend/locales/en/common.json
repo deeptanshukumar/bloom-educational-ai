@@ -1,0 +1,15 @@
+{
+    "welcome": "Welcome to Bloom",
+    "errors": {
+        "auth": {
+            "invalid_credentials": "Invalid email or password",
+            "email_exists": "Email already exists",
+            "unauthorized": "Please authenticate"
+        }
+    },
+    "success": {
+        "login": "Successfully logged in",
+        "register": "Successfully registered",
+        "logout": "Successfully logged out"
+    }
+}

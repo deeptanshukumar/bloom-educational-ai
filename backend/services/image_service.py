@@ -2,20 +2,28 @@ import os
 import tempfile
 from typing import Optional
 from werkzeug.datastructures import FileStorage
-import pytesseract
 from PIL import Image, ImageEnhance, ImageFilter
 
 class ImageService:
     """Service for processing images, especially for math problems"""
     
     def __init__(self):
-        # Initialize any necessary resources
-        pass
+        self.tesseract_available = False
+        try:
+            import pytesseract
+            self.pytesseract = pytesseract
+            self.tesseract_available = True
+        except ImportError:
+            print("Tesseract OCR not available. Text extraction from images will be limited.")
     
     def extract_text_from_image(self, image_file: FileStorage) -> str:
         """
-        Extract text from an image using Tesseract OCR
+        Extract text from an image using Tesseract OCR if available,
+        otherwise return a message indicating OCR is not available
         """
+        if not self.tesseract_available:
+            return "Image text extraction is not available. Please install Tesseract OCR to enable this feature."
+        
         if not image_file:
             return ""
         
@@ -25,23 +33,21 @@ class ImageService:
             temp_path = os.path.join(temp_dir, image_file.filename)
             image_file.save(temp_path)
             
-            # Open the image using PIL
+            # Open and preprocess the image
             image = Image.open(temp_path)
-            
-            # Preprocess the image for better OCR results
             image = self._preprocess_image(image)
             
             # Perform OCR using Tesseract
-            text = pytesseract.image_to_string(image)
+            text = self.pytesseract.image_to_string(image)
             
             # Cleanup
             os.remove(temp_path)
             
-            return text.strip()  # Return the extracted text
+            return text.strip() if text else "No text was detected in the image."
             
         except Exception as e:
             print(f"Error processing image: {e}")
-            return ""
+            return f"Error processing image: {str(e)}"
     
     def extract_math_expression(self, image_file: FileStorage) -> str:
         """
@@ -88,14 +94,18 @@ class ImageService:
         """
         Preprocess the image for better OCR results
         """
-        # Convert to grayscale
-        image = image.convert("L")
-        
-        # Enhance contrast
-        enhancer = ImageEnhance.Contrast(image)
-        image = enhancer.enhance(2.0)
-        
-        # Apply a slight blur to reduce noise
-        image = image.filter(ImageFilter.MedianFilter())
-        
-        return image
+        try:
+            # Convert to grayscale
+            image = image.convert("L")
+            
+            # Enhance contrast
+            enhancer = ImageEnhance.Contrast(image)
+            image = enhancer.enhance(2.0)
+            
+            # Apply a slight blur to reduce noise
+            image = image.filter(ImageFilter.MedianFilter())
+            
+            return image
+        except Exception as e:
+            print(f"Error preprocessing image: {e}")
+            return image  # Return original image if preprocessing fails

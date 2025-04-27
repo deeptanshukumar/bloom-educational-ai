@@ -4,7 +4,7 @@ from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identi
 from models import db
 from models.user import User
 from models.blacklist import blacklist
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -49,33 +49,42 @@ def register():
 @auth_bp.route('/login', methods=['POST'])
 def login():
     """Authenticate a user and return a JWT token"""
-    data = request.json
-    
-    # Validate input
-    if not data or not data.get('username') or not data.get('password'):
-        return jsonify({'error': 'Username and password are required'}), 400
-    
     try:
-        # Find user by username
-        user = User.query.filter_by(username=data['username']).first()
+        data = request.get_json()
+        
+        # Validate input
+        if not data or not data.get('email') or not data.get('password'):
+            return jsonify({'error': 'Email and password are required'}), 400
+        
+        # Find user by email
+        user = User.query.filter_by(email=data['email']).first()
         
         # Check if user exists and password is correct
         if not user or not check_password_hash(user.password_hash, data['password']):
             return jsonify({'error': 'Invalid credentials'}), 401
         
-        # Create access token (convert user.id to string)
+        # Update last login time
+        user.last_login = datetime.utcnow()
+        db.session.commit()
+        
+        # Create access token
         access_token = create_access_token(
-            identity=str(user.id),  # Convert user.id to string
+            identity=str(user.id),
             expires_delta=timedelta(days=1)
         )
         
         return jsonify({
             'message': 'Login successful',
             'access_token': access_token,
-            'username': user.username
-        })
+            'user': {
+                'id': user.id,
+                'email': user.email,
+                'username': user.username
+            }
+        }), 200
         
     except Exception as e:
+        db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
 @auth_bp.route('/profile', methods=['GET'])
