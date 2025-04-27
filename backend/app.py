@@ -1,6 +1,7 @@
 from flask import Flask
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
+from flask_sqlalchemy import SQLAlchemy
 from models import db
 from datetime import timedelta
 import os
@@ -24,7 +25,9 @@ def create_app():
     db.init_app(app)
     app.config['JWT_SECRET_KEY'] = app.config['SECRET_KEY']
     app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=1)
-    
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///instance/bloom_dev.db'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
     @app.route('/')
     def index():
         return "Welcome to the Bloom API!"
@@ -35,6 +38,10 @@ def create_app():
     def check_if_token_revoked(jwt_header, jwt_payload):
         jti = jwt_payload['jti']
         return jti in blacklist
+
+    # Import models here to avoid circular imports
+    from models.user import User
+    from models.session import Session, Interaction
 
     # Register blueprints
     from routes.auth_routes import auth_bp
