@@ -15,7 +15,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY backend /app/backend
 COPY backend/app.py /app/
+COPY backend/models /app/models
+COPY backend/init_db.py /app/
+COPY backend/test_db.py /app/
 
 CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:8000"]
