@@ -1,6 +1,6 @@
-from backend.app import db  # Import the db instance
-from backend.models.user import User
-from backend.models.role import Role
+from app import db  # Import the db instance
+from models.user import User
+
 from werkzeug.security import generate_password_hash
 import os
 from dotenv import load_dotenv
