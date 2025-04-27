@@ -1,54 +1,76 @@
-from flask import Flask
+from flask import Flask, request
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from models import db
-from datetime import timedelta
 import os
-from flask_jwt_extended import JWTManager
 from models.blacklist import blacklist
 from dotenv import load_dotenv
+from config import DevelopmentConfig, ProductionConfig
+import logging
 
 load_dotenv()
 
-def create_app():
-    app = Flask(__name__)
-    CORS(app)
-
-    # Load configuration
-    if os.environ.get('FLASK_ENV') == 'production':
-        app.config.from_object('config.ProductionConfig')
-    else:
-        app.config.from_object('config.DevelopmentConfig')
+def create_app(config_class=DevelopmentConfig):
+    # Ensure instance directory exists
+    instance_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'instance')
+    os.makedirs(instance_path, exist_ok=True)
+    
+    flask_app = Flask(__name__, instance_path=instance_path)
+    flask_app.config.from_object(config_class)
+    
+    # Configure CORS with longer timeout
+    CORS(flask_app, resources={
+        r"/api/*": {
+            "origins": ["http://localhost:3000"],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"],
+            "expose_headers": ["Authorization"],
+            "max_age": 3600,
+            "supports_credentials": True
+        }
+    })
 
     # Initialize extensions
-    db.init_app(app)
-    app.config['JWT_SECRET_KEY'] = app.config['SECRET_KEY']
-    app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=1)
-    
-    @app.route('/')
-    def index():
-        return "Welcome to the Bloom API!"
-    
-    jwt = JWTManager(app)
+    db.init_app(flask_app)
+    jwt = JWTManager(flask_app)
 
     @jwt.token_in_blocklist_loader
-    def check_if_token_revoked(jwt_header, jwt_payload):
+    def check_if_token_revoked(_, jwt_payload):
         jti = jwt_payload['jti']
         return jti in blacklist
 
-    # Register blueprints
-    from routes.auth_routes import auth_bp
-    from routes.tutor_routes import tutor_bp
-    from routes.screen_routes import screen_bp
+    # Register routes
+    with flask_app.app_context():
+        from routes import register_routes
+        register_routes(flask_app)
 
-    app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(tutor_bp, url_prefix='/api/tutor')
-    app.register_blueprint(screen_bp, url_prefix='/api/screen')
+    @flask_app.route('/')
+    def index():
+        return "Welcome to the Bloom API!"
 
-    return app
+    return flask_app
+
+# Create the application instance
+app = create_app(DevelopmentConfig if os.environ.get('FLASK_ENV') == 'development' else ProductionConfig)
+
+# Add after app creation
+app.logger.setLevel(logging.DEBUG)
+
+@app.before_request
+def log_request_info():
+    app.logger.debug('Headers: %s', request.headers)
+    try:
+        body = request.get_json()
+        app.logger.debug('Body: %s', body)
+    except Exception:
+        app.logger.debug('Body: %s', request.get_data())
+    app.logger.debug('URL: %s', request.url)
+    app.logger.debug('Method: %s', request.method)
 
 if __name__ == '__main__':
-    app = create_app()
     with app.app_context():
-        db.create_all()  # Ensure tables are created
-    app.run(debug=True)
+        # Ensure the database directory exists
+        db_dir = os.path.dirname(app.config['SQLALCHEMY_DATABASE_URI'].replace('sqlite:///', ''))
+        os.makedirs(db_dir, exist_ok=True)
+        db.create_all()
+    app.run(debug=True, host='0.0.0.0', port=5000)

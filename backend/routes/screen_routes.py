@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from services.screen_service import ScreenService
+from services.screen_service import ScreenService, DESKTOP_USE_AVAILABLE
 from services.groq_service import GroqService
 
 screen_bp = Blueprint('screen', __name__)
@@ -12,27 +12,42 @@ groq_service = GroqService()
 def screen_service_status():
     """Check if screen monitoring service is connected and running"""
     is_connected = screen_service.is_connected
+    features_available = DESKTOP_USE_AVAILABLE
     return jsonify({
         'status': 'connected' if is_connected else 'disconnected',
+        'features_available': features_available,
         'message': 'Screen monitoring service is active' if is_connected 
-                   else 'Not connected to Terminator server'
+                   else 'Limited functionality available - desktop_use features restricted'
     })
 
 @screen_bp.route('/capture', methods=['GET'])
-def capture_current_screen():
-    """Capture current screen content for analysis"""
-    if not screen_service.is_connected:
-        return jsonify({'error': 'Screen service not connected'}), 503
-    
-    screen_content = screen_service.capture_screen_content()
-    
-    return jsonify(screen_content)
+def capture_screen():
+    """Capture current screen content"""
+    return jsonify(screen_service.capture_screen_content())
+
+@screen_bp.route('/start', methods=['POST'])
+def start_monitoring():
+    """Start screen monitoring"""
+    if not DESKTOP_USE_AVAILABLE:
+        return jsonify({
+            'status': 'limited',
+            'message': 'Started with limited functionality - desktop_use features not available'
+        })
+    return jsonify(screen_service.start_monitoring())
+
+@screen_bp.route('/stop', methods=['POST'])
+def stop_monitoring():
+    """Stop screen monitoring"""
+    return jsonify(screen_service.stop_monitoring())
 
 @screen_bp.route('/analyze', methods=['POST'])
 def analyze_screen_content():
     """Analyze captured screen content using Groq for educational insights"""
-    if not screen_service.is_connected:
-        return jsonify({'error': 'Screen service not connected'}), 503
+    if not screen_service.is_connected and not DESKTOP_USE_AVAILABLE:
+        return jsonify({
+            'status': 'limited',
+            'message': 'Operating with limited functionality'
+        })
     
     data = request.json
     content = data.get('content', '')
@@ -63,14 +78,24 @@ def analyze_screen_content():
     
     return jsonify({
         'original_content': content,
-        'analysis': analysis
+        'analysis': analysis,
+        'status': 'success' if DESKTOP_USE_AVAILABLE else 'limited'
     })
 
 @screen_bp.route('/monitor-app', methods=['POST'])
 def monitor_specific_application():
     """Monitor a specific application (e.g., calculator, notepad)"""
+    if not DESKTOP_USE_AVAILABLE:
+        return jsonify({
+            'error': 'Desktop use functionality not available',
+            'status': 'failed'
+        }), 503
+    
     if not screen_service.is_connected:
-        return jsonify({'error': 'Screen service not connected'}), 503
+        return jsonify({
+            'error': 'Screen service not connected',
+            'status': 'failed'
+        }), 503
     
     data = request.json
     app_name = data.get('application', '')
