@@ -7,8 +7,7 @@ from models.blacklist import blacklist
 from dotenv import load_dotenv
 from config import DevelopmentConfig, ProductionConfig
 import logging
-from backend.init_db import init_database  # Import init_database
-
+from init_db import init_database
 load_dotenv()
 
 def create_app(config_class=DevelopmentConfig):
