@@ -4,8 +4,9 @@ WORKDIR /app
 
 COPY backend/requirements.txt requirements.txt
 
-# Install zlib development files (and other potentially useful build dependencies)
+# Install build dependencies, including gcc and zlib development files
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
     libjpeg-dev \
     zlib1g-dev \
     libfreetype6-dev \
